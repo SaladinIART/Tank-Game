@@ -1,0 +1,302 @@
+"""
+Hex map renderer (programmer-art v0).
+
+Draws terrain-coloured hex polygons with:
+  - Border outline
+  - Hover highlight
+  - Ownership tint on capturable tiles
+  - Viewport culling (skip off-screen hexes)
+  - Terrain initial letter overlay
+  - Fog of war (visible / explored / unseen tri-state)
+"""
+from __future__ import annotations
+
+import math
+from typing import Callable, Optional
+
+import pygame
+
+from src.engine.hex import Hex
+from src.engine.tile import Tile, CAPTURE_TURNS
+from src.engine.unit import Unit
+from src.render.camera import Camera
+
+# Precompute unit-circle corners for a pointy-top hex (no trig each frame).
+_UNIT_CORNERS: tuple[tuple[float, float], ...] = tuple(
+    (math.cos(math.radians(60 * i - 90)), math.sin(math.radians(60 * i - 90)))
+    for i in range(6)
+)
+
+BORDER_COLOR = (0, 0, 0)
+HOVER_BRIGHTEN = 60       # RGB additive boost on hover
+OWNERSHIP_ALPHA = 80      # Alpha of faction-colour overlay (0-255)
+
+# Movement overlay colours (RGBA)
+_REACH_FILL   = (60,  140, 255, 70)
+_REACH_BORDER = (100, 180, 255, 180)
+_PATH_FILL    = (255, 240,  60, 90)
+_PATH_BORDER  = (255, 255, 100, 220)
+_SEL_FILL     = (255, 255, 255, 50)
+_SEL_BORDER   = (255, 255, 255, 230)
+
+# Attack overlay (red ring on targetable enemy hexes)
+_ATK_FILL          = (255,  80,  80,  60)
+_ATK_FILL_HOVER    = (255, 100, 100, 130)
+_ATK_BORDER        = (255, 120, 120, 200)
+_ATK_BORDER_HOVER  = (255, 200, 200, 255)
+
+# Fog of war
+_FOG_EXPLORED_FACTOR = 0.40         # multiplier for explored-but-not-visible tiles
+_FOG_UNSEEN_COLOR    = (28, 32, 42) # dark fill for never-seen hexes
+_FOG_UNSEEN_BORDER   = (12, 14, 18)
+
+FACTION_COLORS: dict[str, tuple[int, int, int]] = {
+    "NATO": (30, 80, 200),
+    "BRICS": (200, 30, 30),
+    "GUERILLA": (30, 160, 60),
+}
+
+TERRAIN_LETTERS: dict[str, str] = {
+    "plain": "",
+    "forest": "F",
+    "mountain": "M",
+    "road": "",
+    "river": "~",
+    "bridge": "=",
+    "city": "C",
+    "oil_well": "O",
+    "airfield": "A",
+    "hq": "HQ",
+}
+
+UNIT_CLASS_LETTERS: dict[str, str] = {
+    "infantry": "I",
+    "engineer": "E",
+    "recon": "R",
+    "vehicle": "V",
+    "artillery": "Y",
+    "aa": "AA",
+    "sniper": "S",
+    "jet": "J",
+    "helicopter": "H",
+    "bomber": "B",
+}
+
+_MARGIN = 80  # px — draw hexes this far outside screen edges (avoids pop-in)
+
+
+def _brighten(color: tuple[int, int, int], amount: int) -> tuple[int, int, int]:
+    return tuple(min(255, c + amount) for c in color)  # type: ignore[return-value]
+
+
+def _blend(base: tuple[int, int, int], tint: tuple[int, int, int], alpha: int) -> tuple[int, int, int]:
+    a = alpha / 255.0
+    return tuple(int(b * (1 - a) + t * a) for b, t in zip(base, tint))  # type: ignore[return-value]
+
+
+class HexRenderer:
+    def __init__(self, camera: Camera) -> None:
+        self.camera = camera
+        self._fonts: dict[int, pygame.font.Font] = {}
+
+    def _get_font(self, size: int) -> pygame.font.Font:
+        if size not in self._fonts:
+            self._fonts[size] = pygame.font.SysFont("consolas", size)
+        return self._fonts[size]
+
+    def _hex_polygon(self, h: Hex) -> list[tuple[float, float]]:
+        cx, cy = self.camera.hex_to_screen(h)
+        s = self.camera.hex_size
+        return [(cx + ux * s, cy + uy * s) for ux, uy in _UNIT_CORNERS]
+
+    def _on_screen(self, cx: float, cy: float) -> bool:
+        m = _MARGIN + self.camera.hex_size
+        return (
+            -m <= cx <= self.camera.screen_w + m
+            and -m <= cy <= self.camera.screen_h + m
+        )
+
+    def draw_map(
+        self,
+        surface: pygame.Surface,
+        tiles: dict[Hex, Tile],
+        hovered_hex: Optional[Hex] = None,
+        visible: Optional[set] = None,
+        explored: Optional[set] = None,
+    ) -> None:
+        """
+        Render the map. If *visible* is None, fog is disabled (debug view).
+        Otherwise each tile renders in one of three states:
+          - currently visible  → full colour
+          - explored only      → dimmed by _FOG_EXPLORED_FACTOR
+          - unseen             → flat dark fill, no terrain letter
+        """
+        label_size = max(8, int(self.camera.hex_size * 0.38))
+        font = self._get_font(label_size)
+        fog_active = visible is not None
+
+        for h, tile in tiles.items():
+            cx, cy = self.camera.hex_to_screen(h)
+            if not self._on_screen(cx, cy):
+                continue
+
+            in_visible = (not fog_active) or h in visible
+            in_explored = in_visible or (explored is not None and h in explored)
+
+            poly = self._hex_polygon(h)
+
+            if not in_explored:
+                # Never seen — draw a dark placeholder so the map shape is legible.
+                pygame.draw.polygon(surface, _FOG_UNSEEN_COLOR, poly)
+                pygame.draw.polygon(surface, _FOG_UNSEEN_BORDER, poly, 1)
+                continue
+
+            terrain = tile.terrain
+            color: tuple[int, int, int] = terrain.color  # type: ignore[assignment]
+
+            # Ownership tint on capturable tiles.
+            if tile.owner_faction and terrain.capturable:
+                fc = FACTION_COLORS.get(tile.owner_faction, (200, 200, 200))
+                color = _blend(color, fc, OWNERSHIP_ALPHA)
+
+            # Explored-only: dim the colour.
+            if not in_visible:
+                color = tuple(int(c * _FOG_EXPLORED_FACTOR) for c in color)  # type: ignore[assignment]
+
+            # Hover highlight (only on revealed hexes).
+            if h == hovered_hex:
+                color = _brighten(color, HOVER_BRIGHTEN)
+
+            pygame.draw.polygon(surface, color, poly)
+            pygame.draw.polygon(surface, BORDER_COLOR, poly, 1)
+
+            # Terrain letter label.
+            letter = TERRAIN_LETTERS.get(terrain.id, "")
+            if letter and self.camera.hex_size >= 24:
+                lbl_color = (0, 0, 0) if in_visible else (70, 75, 85)
+                lbl = font.render(letter, True, lbl_color)
+                lx = cx - lbl.get_width() / 2
+                ly = cy - lbl.get_height() / 2
+                surface.blit(lbl, (lx, ly))
+
+            # Capture progress indicator (e.g. "2/3") — only on visible tiles.
+            if in_visible and tile.capture_progress > 0 and self.camera.hex_size >= 18:
+                cap_str = f"{tile.capture_progress}/{CAPTURE_TURNS}"
+                cap_color = FACTION_COLORS.get(
+                    tile.capturing_faction, (255, 255, 180)
+                )
+                cap_size = max(7, int(self.camera.hex_size * 0.30))
+                cap_lbl = self._get_font(cap_size).render(cap_str, True, cap_color)
+                clx = cx - cap_lbl.get_width() / 2
+                cly = cy + self.camera.hex_size * 0.32
+                surface.blit(cap_lbl, (clx, cly))
+
+    def draw_units(
+        self,
+        surface: pygame.Surface,
+        units: list[Unit],
+        can_see: Optional[Callable[[Unit], bool]] = None,
+    ) -> None:
+        """
+        Draw all live units. Filled circle in faction colour + class letter.
+        If *can_see* is given, units for which it returns False are skipped.
+        """
+        radius = max(6, int(self.camera.hex_size * 0.42))
+        font = self._get_font(max(10, int(self.camera.hex_size * 0.42)))
+        for u in units:
+            if not u.is_alive():
+                continue
+            if can_see is not None and not can_see(u):
+                continue
+            cx, cy = self.camera.hex_to_screen(u.hex)
+            if not self._on_screen(cx, cy):
+                continue
+            faction_color = FACTION_COLORS.get(u.faction, (180, 180, 180))
+            pygame.draw.circle(surface, faction_color, (int(cx), int(cy)), radius)
+            pygame.draw.circle(surface, (0, 0, 0), (int(cx), int(cy)), radius, 2)
+
+            letter = UNIT_CLASS_LETTERS.get(u.unit_type.unit_class, "?")
+            lbl = font.render(letter, True, (255, 255, 255))
+            surface.blit(lbl, (cx - lbl.get_width() / 2, cy - lbl.get_height() / 2))
+
+            # HP bar (only if damaged)
+            if u.hp < u.unit_type.hp:
+                bar_w = int(radius * 2)
+                bar_h = max(2, int(self.camera.hex_size * 0.08))
+                bx = int(cx - radius)
+                by = int(cy + radius + 2)
+                pygame.draw.rect(surface, (60, 60, 60), (bx, by, bar_w, bar_h))
+                fill_w = int(bar_w * (u.hp / u.unit_type.hp))
+                hp_color = (60, 200, 60) if u.hp > 5 else (220, 180, 40) if u.hp > 2 else (220, 60, 60)
+                pygame.draw.rect(surface, hp_color, (bx, by, fill_w, bar_h))
+
+    def draw_movement_overlay(
+        self,
+        surface: pygame.Surface,
+        reachable: dict,
+        path: list,
+        selected_hex: Optional["Hex"],
+    ) -> None:
+        """
+        Draw a semi-transparent overlay showing:
+          - All reachable hexes in blue.
+          - The current hover path in yellow.
+          - The selected unit's hex with a white ring.
+        """
+        overlay = pygame.Surface(
+            (self.camera.screen_w, self.camera.screen_h), pygame.SRCALPHA
+        )
+        path_set = set(path)
+
+        # 1. Reachable hexes (blue) — skip ones that are on the path (drawn brighter below).
+        for h in reachable:
+            if h in path_set:
+                continue
+            cx, cy = self.camera.hex_to_screen(h)
+            if not self._on_screen(cx, cy):
+                continue
+            poly = self._hex_polygon(h)
+            pygame.draw.polygon(overlay, _REACH_FILL, poly)
+            pygame.draw.polygon(overlay, _REACH_BORDER, poly, 2)
+
+        # 2. Path hexes (yellow) — skip the start hex (drawn as selected below).
+        for h in path[1:]:
+            cx, cy = self.camera.hex_to_screen(h)
+            if not self._on_screen(cx, cy):
+                continue
+            poly = self._hex_polygon(h)
+            pygame.draw.polygon(overlay, _PATH_FILL, poly)
+            pygame.draw.polygon(overlay, _PATH_BORDER, poly, 2)
+
+        # 3. Selected unit hex (white ring).
+        if selected_hex is not None:
+            cx, cy = self.camera.hex_to_screen(selected_hex)
+            if self._on_screen(cx, cy):
+                poly = self._hex_polygon(selected_hex)
+                pygame.draw.polygon(overlay, _SEL_FILL, poly)
+                pygame.draw.polygon(overlay, _SEL_BORDER, poly, 2)
+
+        surface.blit(overlay, (0, 0))
+
+    def draw_attack_overlay(
+        self,
+        surface: pygame.Surface,
+        target_hexes,         # iterable[Hex] — enemies the selected unit can hit
+        hovered_hex: Optional["Hex"] = None,
+    ) -> None:
+        """Red overlay on hexes the selected attacker can hit. Hover = brighter."""
+        overlay = pygame.Surface(
+            (self.camera.screen_w, self.camera.screen_h), pygame.SRCALPHA
+        )
+        for h in target_hexes:
+            cx, cy = self.camera.hex_to_screen(h)
+            if not self._on_screen(cx, cy):
+                continue
+            poly = self._hex_polygon(h)
+            is_hover = (h == hovered_hex)
+            fill = _ATK_FILL_HOVER if is_hover else _ATK_FILL
+            border = _ATK_BORDER_HOVER if is_hover else _ATK_BORDER
+            width = 3 if is_hover else 2
+            pygame.draw.polygon(overlay, fill, poly)
+            pygame.draw.polygon(overlay, border, poly, width)
+        surface.blit(overlay, (0, 0))

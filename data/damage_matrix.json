@@ -1,0 +1,15 @@
+{
+  "_comment": "Base damage (0-10) per attacker_class → defender_class. Formula: final = round(base * atk_hp/10 * (1 - terrain_def/10)). 0 means the attack is illegal (no effect, can't reach). Tuned for ~2-3 exchanges per kill at full HP / open terrain.",
+  "base_damage": {
+    "infantry":   {"infantry": 5, "engineer": 6, "recon": 4, "vehicle": 1, "artillery": 8, "aa": 5, "sniper": 4, "jet": 0, "helicopter": 7, "bomber": 0},
+    "engineer":   {"infantry": 4, "engineer": 4, "recon": 2, "vehicle": 1, "artillery": 5, "aa": 3, "sniper": 3, "jet": 0, "helicopter": 4, "bomber": 0},
+    "recon":      {"infantry": 7, "engineer": 7, "recon": 4, "vehicle": 1, "artillery": 7, "aa": 5, "sniper": 6, "jet": 0, "helicopter": 6, "bomber": 0},
+    "vehicle":    {"infantry": 6, "engineer": 6, "recon": 8, "vehicle": 5, "artillery": 7, "aa": 6, "sniper": 6, "jet": 0, "helicopter": 7, "bomber": 0},
+    "artillery":  {"infantry": 9, "engineer": 9, "recon": 8, "vehicle": 7, "artillery": 7, "aa": 7, "sniper": 7, "jet": 0, "helicopter": 6, "bomber": 0},
+    "aa":         {"infantry": 4, "engineer": 4, "recon": 3, "vehicle": 1, "artillery": 5, "aa": 3, "sniper": 3, "jet": 9, "helicopter": 9, "bomber": 8},
+    "sniper":     {"infantry": 8, "engineer": 8, "recon": 3, "vehicle": 1, "artillery": 5, "aa": 4, "sniper": 4, "jet": 0, "helicopter": 4, "bomber": 0},
+    "jet":        {"infantry": 7, "engineer": 7, "recon": 8, "vehicle": 8, "artillery": 7, "aa": 6, "sniper": 7, "jet": 7, "helicopter": 9, "bomber": 8},
+    "helicopter": {"infantry": 7, "engineer": 7, "recon": 7, "vehicle": 6, "artillery": 6, "aa": 5, "sniper": 6, "jet": 0, "helicopter": 5, "bomber": 0},
+    "bomber":     {"infantry": 9, "engineer": 9, "recon": 9, "vehicle": 9, "artillery": 9, "aa": 8, "sniper": 8, "jet": 0, "helicopter": 7, "bomber": 0}
+  }
+}
