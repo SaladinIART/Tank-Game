@@ -1,0 +1,113 @@
+{
+  "name": "Mission 2: Shadow War",
+  "description": "Guerilla forces have infiltrated the border region using stealth and ambush tactics. Hold both urban zones for eight consecutive turns to stabilise the front — or hunt down their hidden HQ.",
+
+  "map": {
+    "width": 20,
+    "height": 13,
+    "default_terrain": "plain",
+    "tiles": [
+      {"comment": "--- NATO owned assets ---"},
+      {"hex": [2, 2], "terrain": "hq",       "owner": "NATO"},
+      {"hex": [3, 2], "terrain": "city",     "owner": "NATO"},
+      {"hex": [2, 3], "terrain": "oil_well", "owner": "NATO"},
+
+      {"comment": "--- GUERILLA owned assets ---"},
+      {"hex": [17, 10], "terrain": "hq",       "owner": "GUERILLA"},
+      {"hex": [17,  9], "terrain": "city",     "owner": "GUERILLA"},
+
+      {"comment": "--- Neutral hold objectives (capture and hold both to win) ---"},
+      {"hex": [ 8, 5], "terrain": "city"},
+      {"hex": [12, 8], "terrain": "city"},
+      {"hex": [10, 6], "terrain": "oil_well"},
+
+      {"comment": "--- Forest: NATO approach cover ---"},
+      {"hex": [5, 3], "terrain": "forest"},
+      {"hex": [5, 4], "terrain": "forest"},
+      {"hex": [6, 3], "terrain": "forest"},
+      {"hex": [6, 4], "terrain": "forest"},
+
+      {"comment": "--- Mountains: central barrier ---"},
+      {"hex": [ 9, 3], "terrain": "mountain"},
+      {"hex": [10, 3], "terrain": "mountain"},
+      {"hex": [11, 3], "terrain": "mountain"},
+      {"hex": [10, 4], "terrain": "mountain"},
+
+      {"comment": "--- Forest: GUERILLA ambush zones ---"},
+      {"hex": [13, 7], "terrain": "forest"},
+      {"hex": [14, 8], "terrain": "forest"},
+      {"hex": [14, 9], "terrain": "forest"},
+      {"hex": [15, 8], "terrain": "forest"},
+
+      {"comment": "--- Roads: southern approach corridor ---"},
+      {"hex": [7,  5], "terrain": "road"},
+      {"hex": [9,  6], "terrain": "road"},
+      {"hex": [11, 7], "terrain": "road"},
+      {"hex": [12, 7], "terrain": "road"}
+    ]
+  },
+
+  "factions": [
+    {
+      "id":      "NATO",
+      "name":    "NATO",
+      "color":   [30, 80, 200],
+      "credits": 700,
+      "oil":     8,
+      "tier":    1,
+      "is_ai":   false
+    },
+    {
+      "id":      "GUERILLA",
+      "name":    "Guerilla",
+      "color":   [130, 140, 70],
+      "credits": 650,
+      "oil":     5,
+      "tier":    1,
+      "is_ai":   true,
+      "personality": {
+        "name": "guerilla",
+        "weights": {
+          "capture_progress":       60.0,
+          "capture_continue":       30.0,
+          "approach_enemy_hq":      25.0,
+          "threat_aversion_base":    0.3,
+          "build_engineer_bonus":   40.0
+        }
+      }
+    }
+  ],
+
+  "units": [
+    {"comment": "--- NATO starting units ---"},
+    {"type_id": "nato_inf_l",     "faction": "NATO",     "hex": [1, 2]},
+    {"type_id": "nato_engineer",  "faction": "NATO",     "hex": [2, 1]},
+    {"type_id": "nato_recon",     "faction": "NATO",     "hex": [3, 3]},
+    {"type_id": "nato_vehicle_m", "faction": "NATO",     "hex": [1, 3]},
+
+    {"comment": "--- GUERILLA starting units (scout is stealth) ---"},
+    {"type_id": "guerilla_irregular", "faction": "GUERILLA", "hex": [18, 10]},
+    {"type_id": "guerilla_scout",     "faction": "GUERILLA", "hex": [16,  9]},
+    {"type_id": "guerilla_technical", "faction": "GUERILLA", "hex": [18,  9]},
+    {"type_id": "guerilla_mortar",    "faction": "GUERILLA", "hex": [17, 11]},
+    {"type_id": "guerilla_irregular", "faction": "GUERILLA", "hex": [16, 11]}
+  ],
+
+  "victory": {
+    "NATO": {
+      "win_conditions": [
+        {"type": "hold_tiles",  "target_hexes": [[8, 5], [12, 8]], "turns_required": 8},
+        {"type": "destroy_hq",  "target_faction": "GUERILLA"}
+      ],
+      "win_mode": "any",
+      "lose_conditions": [{"type": "destroy_hq", "target_faction": "NATO"}],
+      "lose_mode": "any"
+    },
+    "GUERILLA": {
+      "win_conditions":  [{"type": "destroy_hq", "target_faction": "NATO"}],
+      "win_mode": "any",
+      "lose_conditions": [{"type": "destroy_hq", "target_faction": "GUERILLA"}],
+      "lose_mode": "any"
+    }
+  }
+}

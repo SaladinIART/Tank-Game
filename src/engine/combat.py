@@ -75,6 +75,19 @@ def _terrain_defense(state: GameState, unit: Unit) -> int:
     return tile.terrain.defense_bonus if tile is not None else 0
 
 
+def _total_defense(state: GameState, unit: Unit) -> int:
+    """Terrain defence + stance bonus, clamped to a sane upper cap.
+
+    Defend stance (XCOM-style hunker down) adds +2 to the defender's
+    effective terrain bonus.  Total is clamped at 9 so the damage formula
+    can never become non-positive from defence alone."""
+    from src.engine.unit import DEFEND_BONUS, STANCE_DEFEND
+    base = _terrain_defense(state, unit)
+    if unit.stance == STANCE_DEFEND:
+        base += DEFEND_BONUS
+    return min(9, base)
+
+
 def _damage_with_hp(
     state: GameState,
     attacker: Unit,
@@ -88,7 +101,7 @@ def _damage_with_hp(
     atk_hp = attacker.hp if atk_hp_override is None else atk_hp_override
     if atk_hp <= 0:
         return 0
-    terrain_def = _terrain_defense(state, defender)
+    terrain_def = _total_defense(state, defender)
     raw = base * (atk_hp / 10.0) * (1.0 - terrain_def / 10.0)
     return max(0, round(raw))
 
@@ -132,11 +145,15 @@ def predict_exchange(
 
 def can_attack(state: GameState, attacker: Unit, defender: Unit) -> bool:
     """Pure rule check — no fog filter (UI layer enforces visibility)."""
+    from src.engine.unit import STANCE_DEFEND
     if not attacker.is_alive() or not defender.is_alive():
         return False
     if attacker.faction == defender.faction:
         return False
     if attacker.has_attacked:
+        return False
+    # Defending (hunker down) means giving up offence this turn.
+    if attacker.stance == STANCE_DEFEND:
         return False
     if defender.hex not in state.tiles or attacker.hex not in state.tiles:
         return False

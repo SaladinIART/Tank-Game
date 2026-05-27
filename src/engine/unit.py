@@ -65,6 +65,12 @@ class UnitType:
 _id_counter: count = count(1)
 
 
+STANCE_ATTACK = "attack"
+STANCE_DEFEND = "defend"
+VALID_STANCES = frozenset({STANCE_ATTACK, STANCE_DEFEND})
+DEFEND_BONUS = 2   # added to defender's effective terrain bonus when in defend stance
+
+
 @dataclass
 class Unit:
     type_id: str
@@ -74,6 +80,7 @@ class Unit:
     has_moved: bool = field(default=False)
     has_attacked: bool = field(default=False)
     uid: int = field(default_factory=lambda: next(_id_counter))
+    stance: str = field(default=STANCE_ATTACK)
 
     @property
     def unit_type(self) -> UnitType:
@@ -87,9 +94,14 @@ class Unit:
         return self.has_moved and self.has_attacked
 
     def reset_turn(self) -> None:
-        """Call at the start of this faction's turn."""
+        """Call at the start of this faction's turn.
+
+        Defend stance is one-shot: it persists through the enemy turn but
+        clears when this unit is about to act again, so the player must
+        re-issue the order each round (XCOM-style hunker down)."""
         self.has_moved = False
         self.has_attacked = False
+        self.stance = STANCE_ATTACK
 
     def apply_damage(self, amount: int) -> None:
         self.hp = max(0, self.hp - amount)

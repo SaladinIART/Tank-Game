@@ -1,0 +1,125 @@
+{
+  "name": "Mission 3: Iron Fist",
+  "description": "BRICS forces control the region's oil infrastructure. Capture every oil well to cripple their war economy — but they have greater numbers and won't give ground easily.",
+
+  "map": {
+    "width": 22,
+    "height": 14,
+    "default_terrain": "plain",
+    "tiles": [
+      {"comment": "--- NATO owned assets ---"},
+      {"hex": [2, 3], "terrain": "hq",   "owner": "NATO"},
+      {"hex": [3, 3], "terrain": "city", "owner": "NATO"},
+
+      {"comment": "--- BRICS owned assets ---"},
+      {"hex": [19, 10], "terrain": "hq",   "owner": "BRICS"},
+      {"hex": [18, 10], "terrain": "city", "owner": "BRICS"},
+
+      {"comment": "--- Neutral oil wells (NATO must own ALL 5 to win) ---"},
+      {"hex": [ 5, 5], "terrain": "oil_well"},
+      {"hex": [ 9, 4], "terrain": "oil_well"},
+      {"hex": [12, 7], "terrain": "oil_well"},
+      {"hex": [15, 5], "terrain": "oil_well"},
+      {"hex": [18, 7], "terrain": "oil_well"},
+
+      {"comment": "--- Neutral cities ---"},
+      {"hex": [ 8, 5], "terrain": "city"},
+      {"hex": [15, 9], "terrain": "city"},
+
+      {"comment": "--- Forest: mid-map cover ---"},
+      {"hex": [6, 5], "terrain": "forest"},
+      {"hex": [7, 5], "terrain": "forest"},
+      {"hex": [7, 4], "terrain": "forest"},
+      {"hex": [7, 6], "terrain": "forest"},
+
+      {"comment": "--- Mountains: northern barrier ---"},
+      {"hex": [10, 3], "terrain": "mountain"},
+      {"hex": [11, 3], "terrain": "mountain"},
+      {"hex": [11, 4], "terrain": "mountain"},
+
+      {"comment": "--- River: central chokepoint with bridge at (13,6) ---"},
+      {"hex": [13, 4], "terrain": "river"},
+      {"hex": [13, 5], "terrain": "river"},
+      {"hex": [13, 6], "terrain": "bridge"},
+      {"hex": [13, 7], "terrain": "river"},
+      {"hex": [13, 8], "terrain": "river"},
+
+      {"comment": "--- Forest: BRICS-side cover ---"},
+      {"hex": [16, 7], "terrain": "forest"},
+      {"hex": [16, 8], "terrain": "forest"},
+      {"hex": [17, 8], "terrain": "forest"},
+
+      {"comment": "--- Roads ---"},
+      {"hex": [ 4, 4], "terrain": "road"},
+      {"hex": [ 5, 4], "terrain": "road"},
+      {"hex": [10, 5], "terrain": "road"},
+      {"hex": [11, 6], "terrain": "road"},
+      {"hex": [12, 6], "terrain": "road"},
+      {"hex": [14, 7], "terrain": "road"},
+      {"hex": [15, 7], "terrain": "road"}
+    ]
+  },
+
+  "factions": [
+    {
+      "id":      "NATO",
+      "name":    "NATO",
+      "color":   [30, 80, 200],
+      "credits": 700,
+      "oil":     8,
+      "tier":    1,
+      "is_ai":   false
+    },
+    {
+      "id":      "BRICS",
+      "name":    "BRICS",
+      "color":   [200, 30, 30],
+      "credits": 800,
+      "oil":     8,
+      "tier":    1,
+      "is_ai":   true,
+      "personality": {
+        "name": "resource_aggressive",
+        "weights": {
+          "capture_progress":    50.0,
+          "capture_continue":    25.0,
+          "attack_damage":        4.0,
+          "approach_enemy_hq":   12.0,
+          "build_engineer_bonus": 45.0
+        }
+      }
+    }
+  ],
+
+  "units": [
+    {"comment": "--- NATO starting units (5) ---"},
+    {"type_id": "nato_inf_l",     "faction": "NATO",  "hex": [1, 3]},
+    {"type_id": "nato_engineer",  "faction": "NATO",  "hex": [2, 2]},
+    {"type_id": "nato_recon",     "faction": "NATO",  "hex": [3, 4]},
+    {"type_id": "nato_vehicle_l", "faction": "NATO",  "hex": [1, 4]},
+    {"type_id": "nato_aa_l",      "faction": "NATO",  "hex": [3, 2]},
+
+    {"comment": "--- BRICS starting units (6 — harder) ---"},
+    {"type_id": "brics_inf_l",     "faction": "BRICS", "hex": [20, 10]},
+    {"type_id": "brics_inf_l",     "faction": "BRICS", "hex": [21,  9]},
+    {"type_id": "brics_engineer",  "faction": "BRICS", "hex": [19, 11]},
+    {"type_id": "brics_recon",     "faction": "BRICS", "hex": [20,  9]},
+    {"type_id": "brics_vehicle_l", "faction": "BRICS", "hex": [21, 10]},
+    {"type_id": "brics_aa_l",      "faction": "BRICS", "hex": [20, 11]}
+  ],
+
+  "victory": {
+    "NATO": {
+      "win_conditions":  [{"type": "own_all_terrain", "terrain_id": "oil_well"}],
+      "win_mode": "any",
+      "lose_conditions": [{"type": "destroy_hq", "target_faction": "NATO"}],
+      "lose_mode": "any"
+    },
+    "BRICS": {
+      "win_conditions":  [{"type": "destroy_hq", "target_faction": "NATO"}],
+      "win_mode": "any",
+      "lose_conditions": [{"type": "destroy_hq", "target_faction": "BRICS"}],
+      "lose_mode": "any"
+    }
+  }
+}

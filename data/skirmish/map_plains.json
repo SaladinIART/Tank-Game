@@ -1,0 +1,33 @@
+{
+  "name": "Plains",
+  "description": "Open terrain — fast, aggressive games.",
+  "width": 16,
+  "height": 12,
+  "default_terrain": "plain",
+  "hq_positions": [[1, 1], [14, 10], [1, 10]],
+  "tiles": [
+    {"comment": "--- Forest cover patches ---"},
+    {"hex": [4,  3], "terrain": "forest"},
+    {"hex": [5,  3], "terrain": "forest"},
+    {"hex": [4,  4], "terrain": "forest"},
+    {"hex": [5,  4], "terrain": "forest"},
+    {"hex": [10, 7], "terrain": "forest"},
+    {"hex": [11, 7], "terrain": "forest"},
+    {"hex": [10, 8], "terrain": "forest"},
+
+    {"comment": "--- Neutral objectives ---"},
+    {"hex": [7,  3], "terrain": "city"},
+    {"hex": [8,  8], "terrain": "city"},
+    {"hex": [7,  6], "terrain": "oil_well"},
+    {"hex": [9,  5], "terrain": "oil_well"},
+    {"hex": [11, 4], "terrain": "city"},
+
+    {"comment": "--- Roads connecting areas ---"},
+    {"hex": [3,  2], "terrain": "road"},
+    {"hex": [4,  2], "terrain": "road"},
+    {"hex": [5,  2], "terrain": "road"},
+    {"hex": [9,  6], "terrain": "road"},
+    {"hex": [10, 6], "terrain": "road"},
+    {"hex": [11, 6], "terrain": "road"}
+  ]
+}

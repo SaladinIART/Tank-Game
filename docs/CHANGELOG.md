@@ -1,0 +1,121 @@
+# Changelog
+
+Versioning is by Checkpoint (CP). The plan file has full notes; this is
+the short version.
+
+## Post-launch additions
+
+### Hunker Down + Retreat + End-turn confirm + HQ clearance
+- **Hunker (`H`)**: XCOM-style stance. +2 DEF for incoming, can't attack,
+  still counter-attacks. Persists through enemy turn; auto-clears at own
+  next turn start.
+- **Retreat (`R`)**: auto-pathfind toward own HQ; tiebreak on lowest
+  enemy threat. Consumes move + attack.
+- **End-turn confirmation modal**: pops when any of your units can still
+  act. Y/Enter to confirm, N/Esc to keep playing.
+- **HQ surroundings clearance**: scenario loader auto-converts mountain /
+  river neighbours of any HQ to plain, so engineers can always deploy.
+- 18 new tests; 669 total green.
+
+### Tooltips + resizable window
+- Hover any unit or terrain hex for a stat card with combat matchups
+  (BEST vs / WEAK vs from real damage matrix) and tactical hints.
+- Window is now resizable + maximizable; **F11** toggles native-resolution
+  fullscreen. HUD reflows on resize.
+- 21 new tooltip tests; 651 total green at this point.
+
+## Phase C (polish + ship)
+
+### CP-27 — Deploy
+- Pygbag build + GitHub Pages CI + itch.io packaging tool.
+- ASCII-only enforcement on Python source for cp1252-compatible reads.
+- 15 deploy-artifact tests (skip-if-no-build).
+
+### CP-26 — Balance pass
+- AI-vs-AI simulator (`tools/sim_missions.py`).
+- BRICS atk parity fix (`inf_l` and `recon` were strictly better than
+  NATO equivalents).
+- Engineers buffed across all factions (move 2→3, def 0→1, cheaper).
+- New `approach_capture_target` AI weight fixes long-range engineer pull.
+- New **Insane** difficulty with "predator" personality.
+- 19 balance-lock tests.
+
+### CP-25 — SFX + music
+- Procedural WAV generator (stdlib only): 7 SFX + 3 faction music loops.
+- `SoundManager` with SDL-dummy-safe init, mute, focus-pause.
+
+### CP-24 — Kenney-ready sprite swap
+- `SpriteCache` with headless fallback.
+- Procedural placeholder PNG generator (10 terrain + 10 unit icons).
+- HexRenderer blits sprites with letter fallback below zoom 20.
+
+## Phase B (content expansion)
+
+### CP-23 — Skirmish mode
+- 3 canned maps + seeded procgen.
+- Pre-match config: map, faction, AI opponents, victory toggles.
+
+### CP-19 to 22 — Missions 2–5
+- M2 Shadow War (hold-tiles), M3 Iron Fist (own-all-oil), M4 Last Stand
+  (defense), M5 Decapitation (kill named unit).
+
+### CP-18 — Guerilla + stealth
+- 10 Guerilla units, 3 flagships (stealth scout, stealth drone, kamikaze).
+- `STEALTH_DETECTION_RADIUS` + AI targeting filter.
+- `self_destruct` flag for kamikaze (no counter, attacker dies).
+
+### CP-17 — BRICS roster
+- 10 BRICS units; T3 Iskander-M (range 4–7, atk 9).
+
+## Phase A (vertical slice)
+
+### CP-16 — Main menu + pre-match
+- 4-screen state machine. Pre-match difficulty + faction. Load menu with
+  autosave + 3 slots.
+
+### CP-15 — Save / autosave
+- JSON v1 schema. Autosave per end-turn; 3 manual slots cycle.
+
+### CP-14 — Mission 1
+- Scenario JSON loader. m1.json with river + bridge choke.
+
+### CP-13 — AI v0
+- Heuristic enumerate→score→execute loop. Personality system.
+
+### CP-12 — Victory engine
+- 5 condition types: destroy_hq, hold_tiles, own_all_terrain,
+  eliminate_faction, destroy_unit_type. AND/OR composition.
+
+### CP-11 — Build menu + tech
+- Click HQ → tier-filtered menu. Instant tier upgrades.
+
+### CP-10 — Capture + economy
+- 3-turn engineer capture. Income tick before unit reset.
+
+### CP-9 — Combat resolver
+- Damage matrix. Predict = resolve. Counter-attack logic.
+
+### CP-8 — Fog of war
+- Per-faction visibility cache. Per-unit vision + terrain modifier.
+- Persistent explored memory.
+
+### CP-7 — Movement + path preview
+- Dijkstra reachable. Friendly pass-through, enemy block.
+
+### CP-6 — GameState + turns
+- Faction rotation, income, upkeep, action-flag reset.
+
+### CP-5 — Unit roster
+- 9 NATO units. JSON-driven UnitType registry.
+
+### CP-4 — Hex render + camera
+- Cursor-anchored zoom. Pan with WASD / right-drag.
+
+### CP-3 — Terrain table
+- 10 terrain types. Move-cost per category. Defense bonus, LOS, income.
+
+### CP-2 — Hex math
+- Axial coords. Neighbours, distance, ring, disk, line, pixel↔hex.
+
+### CP-1 — Pygbag scaffold
+- Async loop, requirements.txt, archived original `tankv1.py`.

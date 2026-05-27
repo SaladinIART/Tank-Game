@@ -1,0 +1,111 @@
+{
+  "name": "Mission 4: Last Stand",
+  "description": "NATO forces are outnumbered and surrounded. Hold your HQ position for 20 consecutive turns to earn a tactical withdrawal, or counter-attack and destroy the BRICS command post.",
+
+  "map": {
+    "width": 16,
+    "height": 12,
+    "default_terrain": "plain",
+    "tiles": [
+      {"comment": "--- NATO fortified corner ---"},
+      {"hex": [2, 2], "terrain": "hq",   "owner": "NATO"},
+      {"hex": [3, 2], "terrain": "city", "owner": "NATO"},
+      {"hex": [2, 3], "terrain": "city", "owner": "NATO"},
+
+      {"comment": "--- BRICS assault base ---"},
+      {"hex": [13,  9], "terrain": "hq",       "owner": "BRICS"},
+      {"hex": [12,  9], "terrain": "city",     "owner": "BRICS"},
+      {"hex": [13, 10], "terrain": "oil_well", "owner": "BRICS"},
+
+      {"comment": "--- Neutral objectives ---"},
+      {"hex": [7, 5], "terrain": "city"},
+      {"hex": [7, 6], "terrain": "oil_well"},
+
+      {"comment": "--- Forest: NATO defensive cover ---"},
+      {"hex": [3, 3], "terrain": "forest"},
+      {"hex": [3, 4], "terrain": "forest"},
+      {"hex": [4, 3], "terrain": "forest"},
+      {"hex": [4, 4], "terrain": "forest"},
+
+      {"comment": "--- Mountain: funnels BRICS into southern approach ---"},
+      {"hex": [8, 3], "terrain": "mountain"},
+      {"hex": [8, 4], "terrain": "mountain"},
+
+      {"comment": "--- Roads: BRICS attack corridor ---"},
+      {"hex": [ 9, 5], "terrain": "road"},
+      {"hex": [10, 5], "terrain": "road"},
+      {"hex": [10, 6], "terrain": "road"},
+      {"hex": [11, 6], "terrain": "road"},
+      {"hex": [11, 7], "terrain": "road"},
+      {"hex": [12, 7], "terrain": "road"}
+    ]
+  },
+
+  "factions": [
+    {
+      "id":      "NATO",
+      "name":    "NATO",
+      "color":   [30, 80, 200],
+      "credits": 300,
+      "oil":     4,
+      "tier":    1,
+      "is_ai":   false
+    },
+    {
+      "id":      "BRICS",
+      "name":    "BRICS",
+      "color":   [200, 30, 30],
+      "credits": 1200,
+      "oil":     10,
+      "tier":    1,
+      "is_ai":   true,
+      "personality": {
+        "name": "blitz",
+        "weights": {
+          "attack_damage":          5.0,
+          "attack_kill_bonus":     90.0,
+          "attack_counter_penalty": 1.0,
+          "approach_enemy_hq":     50.0,
+          "retreat_when_low_hp":    0.5,
+          "threat_aversion_base":   0.1,
+          "build_when_low_army":   45.0,
+          "build_engineer_bonus":  20.0
+        }
+      }
+    }
+  ],
+
+  "units": [
+    {"comment": "--- NATO starting units (4 — outnumbered but well positioned) ---"},
+    {"type_id": "nato_inf_l",     "faction": "NATO",  "hex": [1, 2]},
+    {"type_id": "nato_inf_l",     "faction": "NATO",  "hex": [3, 2]},
+    {"type_id": "nato_engineer",  "faction": "NATO",  "hex": [2, 1]},
+    {"type_id": "nato_vehicle_m", "faction": "NATO",  "hex": [2, 3]},
+
+    {"comment": "--- BRICS starting units (6 — outnumber NATO) ---"},
+    {"type_id": "brics_inf_l",     "faction": "BRICS", "hex": [14,  9]},
+    {"type_id": "brics_inf_l",     "faction": "BRICS", "hex": [13,  8]},
+    {"type_id": "brics_inf_l",     "faction": "BRICS", "hex": [14,  8]},
+    {"type_id": "brics_vehicle_l", "faction": "BRICS", "hex": [12,  8]},
+    {"type_id": "brics_vehicle_l", "faction": "BRICS", "hex": [14, 10]},
+    {"type_id": "brics_engineer",  "faction": "BRICS", "hex": [12, 10]}
+  ],
+
+  "victory": {
+    "NATO": {
+      "win_conditions": [
+        {"type": "hold_tiles", "target_hexes": [[2, 2]], "turns_required": 20},
+        {"type": "destroy_hq", "target_faction": "BRICS"}
+      ],
+      "win_mode": "any",
+      "lose_conditions": [{"type": "destroy_hq", "target_faction": "NATO"}],
+      "lose_mode": "any"
+    },
+    "BRICS": {
+      "win_conditions":  [{"type": "destroy_hq", "target_faction": "NATO"}],
+      "win_mode": "any",
+      "lose_conditions": [{"type": "destroy_hq", "target_faction": "BRICS"}],
+      "lose_mode": "any"
+    }
+  }
+}

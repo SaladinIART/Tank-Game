@@ -1,0 +1,133 @@
+{
+  "name": "Mission 5: Decapitation",
+  "description": "BRICS has deployed an Iskander-M hypersonic missile system deep in enemy territory. Destroy it before it can be used. Expect heavy escort — this is a one-way ticket if you fail.",
+
+  "map": {
+    "width": 24,
+    "height": 15,
+    "default_terrain": "plain",
+    "tiles": [
+      {"comment": "--- NATO owned assets ---"},
+      {"hex": [2, 3], "terrain": "hq",       "owner": "NATO"},
+      {"hex": [3, 3], "terrain": "city",     "owner": "NATO"},
+      {"hex": [2, 4], "terrain": "oil_well", "owner": "NATO"},
+
+      {"comment": "--- BRICS owned assets ---"},
+      {"hex": [21, 11], "terrain": "hq",       "owner": "BRICS"},
+      {"hex": [20, 11], "terrain": "city",     "owner": "BRICS"},
+      {"hex": [21, 12], "terrain": "oil_well", "owner": "BRICS"},
+
+      {"comment": "--- Neutral mid-map objectives ---"},
+      {"hex": [ 9, 5], "terrain": "city"},
+      {"hex": [15, 8], "terrain": "city"},
+      {"hex": [12, 7], "terrain": "oil_well"},
+
+      {"comment": "--- Mountain: central barrier forces river crossing ---"},
+      {"hex": [12, 3], "terrain": "mountain"},
+      {"hex": [13, 3], "terrain": "mountain"},
+      {"hex": [13, 4], "terrain": "mountain"},
+      {"hex": [14, 4], "terrain": "mountain"},
+
+      {"comment": "--- River 1: first chokepoint (bridge at [7,6]) ---"},
+      {"hex": [7, 5], "terrain": "river"},
+      {"hex": [7, 6], "terrain": "bridge"},
+      {"hex": [7, 7], "terrain": "river"},
+      {"hex": [7, 8], "terrain": "river"},
+
+      {"comment": "--- River 2: second chokepoint (bridge at [15,7]) ---"},
+      {"hex": [15, 6], "terrain": "river"},
+      {"hex": [15, 7], "terrain": "bridge"},
+      {"hex": [15, 8], "terrain": "city"},
+      {"hex": [15, 9], "terrain": "river"},
+
+      {"comment": "--- Forest: mid-map cover ---"},
+      {"hex": [10, 7], "terrain": "forest"},
+      {"hex": [11, 7], "terrain": "forest"},
+      {"hex": [11, 8], "terrain": "forest"},
+
+      {"comment": "--- Forest: protecting the Iskander-M ---"},
+      {"hex": [17,  9], "terrain": "forest"},
+      {"hex": [18,  9], "terrain": "forest"},
+      {"hex": [18, 10], "terrain": "forest"},
+      {"hex": [17, 10], "terrain": "forest"},
+
+      {"comment": "--- Roads ---"},
+      {"hex": [ 4, 4], "terrain": "road"},
+      {"hex": [ 5, 5], "terrain": "road"},
+      {"hex": [ 6, 5], "terrain": "road"},
+      {"hex": [ 8, 6], "terrain": "road"},
+      {"hex": [ 9, 6], "terrain": "road"},
+      {"hex": [10, 6], "terrain": "road"},
+      {"hex": [12, 8], "terrain": "road"},
+      {"hex": [13, 8], "terrain": "road"},
+      {"hex": [14, 8], "terrain": "road"},
+      {"hex": [16, 9], "terrain": "road"},
+      {"hex": [17, 9], "terrain": "forest"}
+    ]
+  },
+
+  "factions": [
+    {
+      "id":      "NATO",
+      "name":    "NATO",
+      "color":   [30, 80, 200],
+      "credits": 800,
+      "oil":     10,
+      "tier":    1,
+      "is_ai":   false
+    },
+    {
+      "id":      "BRICS",
+      "name":    "BRICS",
+      "color":   [200, 30, 30],
+      "credits": 1000,
+      "oil":     10,
+      "tier":    1,
+      "is_ai":   true,
+      "personality": {
+        "name": "guardian",
+        "weights": {
+          "approach_enemy_hq":     5.0,
+          "threat_aversion_base":  1.5,
+          "retreat_when_low_hp":   3.5,
+          "attack_damage":         2.0,
+          "build_when_low_army":  30.0
+        }
+      }
+    }
+  ],
+
+  "units": [
+    {"comment": "--- NATO starting units (6 — balanced assault force) ---"},
+    {"type_id": "nato_inf_l",     "faction": "NATO",  "hex": [1, 3]},
+    {"type_id": "nato_engineer",  "faction": "NATO",  "hex": [2, 2]},
+    {"type_id": "nato_recon",     "faction": "NATO",  "hex": [3, 4]},
+    {"type_id": "nato_vehicle_m", "faction": "NATO",  "hex": [1, 4]},
+    {"type_id": "nato_vehicle_l", "faction": "NATO",  "hex": [4, 3]},
+    {"type_id": "nato_aa_l",      "faction": "NATO",  "hex": [1, 2]},
+
+    {"comment": "--- BRICS starting units (7 — defensive escort around the target) ---"},
+    {"type_id": "brics_hypersonic", "faction": "BRICS", "hex": [19, 9]},
+    {"type_id": "brics_aa_l",       "faction": "BRICS", "hex": [20, 9]},
+    {"type_id": "brics_aa_l",       "faction": "BRICS", "hex": [20, 10]},
+    {"type_id": "brics_inf_l",      "faction": "BRICS", "hex": [23, 11]},
+    {"type_id": "brics_inf_l",      "faction": "BRICS", "hex": [22, 10]},
+    {"type_id": "brics_vehicle_m",  "faction": "BRICS", "hex": [23, 12]},
+    {"type_id": "brics_recon",      "faction": "BRICS", "hex": [22, 11]}
+  ],
+
+  "victory": {
+    "NATO": {
+      "win_conditions":  [{"type": "destroy_unit_type", "type_id": "brics_hypersonic", "owner_faction": "BRICS"}],
+      "win_mode": "any",
+      "lose_conditions": [{"type": "destroy_hq", "target_faction": "NATO"}],
+      "lose_mode": "any"
+    },
+    "BRICS": {
+      "win_conditions":  [{"type": "destroy_hq", "target_faction": "NATO"}],
+      "win_mode": "any",
+      "lose_conditions": [{"type": "destroy_unit_type", "type_id": "brics_hypersonic", "owner_faction": "BRICS"}],
+      "lose_mode": "any"
+    }
+  }
+}

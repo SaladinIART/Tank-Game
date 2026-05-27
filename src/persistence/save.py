@@ -117,6 +117,7 @@ def _unit_to_dict(u: Unit) -> dict[str, Any]:
         "hp":          u.hp,
         "has_moved":   u.has_moved,
         "has_attacked": u.has_attacked,
+        "stance":      u.stance,
     }
 
 
@@ -216,6 +217,7 @@ def dict_to_state(data: dict[str, Any]) -> GameState:
             has_moved=bool(ud["has_moved"]),
             has_attacked=bool(ud["has_attacked"]),
             uid=int(ud["uid"]),   # explicit uid — bypasses auto-counter
+            stance=str(ud.get("stance", "attack")),    # back-compat default
         )
         state.units[unit.uid] = unit   # bypass add_unit to avoid fog invalidation
         max_uid = max(max_uid, unit.uid)

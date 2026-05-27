@@ -70,7 +70,8 @@ DEFAULT_WEIGHTS: dict[str, float] = {
 
     # Movement
     "move_base":                 1.0,    # small reward for any reachable hex
-    "approach_enemy_hq":         20.0,   # divided by (distance + 1)
+    "approach_enemy_hq":         20.0,   # combat units: divided by (distance + 1)
+    "approach_capture_target":   60.0,   # engineers: pull toward any distant capturable tile
     "capture_progress":          40.0,   # engineer landing on capturable tile
     "capture_continue":          20.0,   # bonus if we were already capturing
     "retreat_when_low_hp":       1.5,    # multiplier on dest-threat when wounded
@@ -291,23 +292,35 @@ def _score_attack(state, attacker, defender, weights) -> float:
 def _score_move(state, unit, dest: Hex, weights) -> float:
     score = weights["move_base"]
 
-    # Capture-intent bonus
     if unit.unit_type.can_capture:
+        # Immediate capture bonus — dest IS a capturable enemy/neutral tile.
         tile = state.tiles.get(dest)
         if tile is not None and tile.terrain.capturable and tile.owner_faction != unit.faction:
             score += weights["capture_progress"]
             if tile.capture_progress > 0 and tile.capturing_faction == unit.faction:
                 score += weights["capture_continue"]
 
-    # Pull toward enemy HQs (closer = higher score)
-    enemy_hqs = [
-        t.hex for t in state.tiles.values()
-        if t.terrain.is_hq and t.owner_faction is not None and t.owner_faction != unit.faction
-    ]
-    if enemy_hqs and not unit.unit_type.can_capture:
-        # Combat units pull toward enemy HQ; engineers prioritise capture instead.
-        nearest = min(distance(dest, h) for h in enemy_hqs)
-        score += weights["approach_enemy_hq"] / (nearest + 1.0)
+        # Long-range pull toward the nearest capturable target so engineers
+        # don't loiter at home when no capturable tile is in current move range.
+        # Enemy HQs count as capturable targets here so engineers actively try
+        # to flip them, which is what closes out a "destroy_hq" game.
+        cap_targets = [
+            t.hex for t in state.tiles.values()
+            if t.terrain.capturable and t.owner_faction != unit.faction
+        ]
+        if cap_targets:
+            nearest = min(distance(dest, h) for h in cap_targets)
+            score += weights["approach_capture_target"] / (nearest + 1.0)
+
+    else:
+        # Combat units: pull toward enemy HQs (closer = higher score).
+        enemy_hqs = [
+            t.hex for t in state.tiles.values()
+            if t.terrain.is_hq and t.owner_faction is not None and t.owner_faction != unit.faction
+        ]
+        if enemy_hqs:
+            nearest = min(distance(dest, h) for h in enemy_hqs)
+            score += weights["approach_enemy_hq"] / (nearest + 1.0)
 
     # Threat aversion (more if wounded)
     threat = threat_to_unit_at(state, unit, dest)

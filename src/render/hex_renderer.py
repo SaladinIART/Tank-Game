@@ -20,6 +20,7 @@ from src.engine.hex import Hex
 from src.engine.tile import Tile, CAPTURE_TURNS
 from src.engine.unit import Unit
 from src.render.camera import Camera
+from src.render.sprites import get_terrain_sprite, get_unit_sprite
 
 # Precompute unit-circle corners for a pointy-top hex (no trig each frame).
 _UNIT_CORNERS: tuple[tuple[float, float], ...] = tuple(
@@ -170,14 +171,28 @@ class HexRenderer:
             pygame.draw.polygon(surface, color, poly)
             pygame.draw.polygon(surface, BORDER_COLOR, poly, 1)
 
-            # Terrain letter label.
-            letter = TERRAIN_LETTERS.get(terrain.id, "")
-            if letter and self.camera.hex_size >= 24:
-                lbl_color = (0, 0, 0) if in_visible else (70, 75, 85)
-                lbl = font.render(letter, True, lbl_color)
-                lx = cx - lbl.get_width() / 2
-                ly = cy - lbl.get_height() / 2
-                surface.blit(lbl, (lx, ly))
+            # Terrain sprite icon — overlaid on top of the polygon.
+            # Only drawn at meaningful zoom levels; falls back to the letter.
+            sprite_size = max(16, int(self.camera.hex_size * 1.35))
+            terrain_spr = get_terrain_sprite(terrain.id, sprite_size) if self.camera.hex_size >= 20 else None
+
+            if terrain_spr is not None:
+                # Dim the sprite for explored-only hexes to match the polygon dim.
+                if not in_visible:
+                    terrain_spr = terrain_spr.copy()
+                    terrain_spr.set_alpha(int(255 * _FOG_EXPLORED_FACTOR))
+                sx = int(cx - sprite_size / 2)
+                sy = int(cy - sprite_size / 2)
+                surface.blit(terrain_spr, (sx, sy))
+            else:
+                # Fallback: terrain letter label.
+                letter = TERRAIN_LETTERS.get(terrain.id, "")
+                if letter and self.camera.hex_size >= 24:
+                    lbl_color = (0, 0, 0) if in_visible else (70, 75, 85)
+                    lbl = font.render(letter, True, lbl_color)
+                    lx = cx - lbl.get_width() / 2
+                    ly = cy - lbl.get_height() / 2
+                    surface.blit(lbl, (lx, ly))
 
             # Capture progress indicator (e.g. "2/3") — only on visible tiles.
             if in_visible and tile.capture_progress > 0 and self.camera.hex_size >= 18:
@@ -215,9 +230,16 @@ class HexRenderer:
             pygame.draw.circle(surface, faction_color, (int(cx), int(cy)), radius)
             pygame.draw.circle(surface, (0, 0, 0), (int(cx), int(cy)), radius, 2)
 
-            letter = UNIT_CLASS_LETTERS.get(u.unit_type.unit_class, "?")
-            lbl = font.render(letter, True, (255, 255, 255))
-            surface.blit(lbl, (cx - lbl.get_width() / 2, cy - lbl.get_height() / 2))
+            # Unit icon sprite — drawn on top of the faction circle.
+            icon_size   = max(10, int(radius * 1.55))
+            unit_icon   = get_unit_sprite(u.unit_type.unit_class, icon_size)
+            if unit_icon is not None:
+                surface.blit(unit_icon, (cx - icon_size / 2, cy - icon_size / 2))
+            else:
+                # Fallback: class letter.
+                letter = UNIT_CLASS_LETTERS.get(u.unit_type.unit_class, "?")
+                lbl = font.render(letter, True, (255, 255, 255))
+                surface.blit(lbl, (cx - lbl.get_width() / 2, cy - lbl.get_height() / 2))
 
             # HP bar (only if damaged)
             if u.hp < u.unit_type.hp:
