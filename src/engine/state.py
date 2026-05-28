@@ -252,7 +252,24 @@ class GameState:
         self._process_captures(faction)   # before income so flipped tiles contribute
         self._apply_income(faction)
         self._apply_upkeep(faction)
+        self._apply_healing(faction)      # heal on owned capturable tiles
         self._reset_units(faction)
+
+    def _apply_healing(self, faction: Faction) -> None:
+        """Heal own units standing on owned capturable tiles (city/oil/airfield/HQ).
+
+        Heal amount is capped at the unit's veterancy-adjusted max HP.
+        """
+        from src.engine.veterancy import max_hp_for
+        HEAL_AMOUNT = 2
+        for unit in self.units_of(faction.id):
+            tile = self.tiles.get(unit.hex)
+            if tile is None:
+                continue
+            if tile.terrain.capturable and tile.owner_faction == faction.id:
+                cap = max_hp_for(unit)
+                if unit.hp < cap:
+                    unit.hp = min(cap, unit.hp + HEAL_AMOUNT)
 
     def _process_captures(self, faction: Faction) -> None:
         """Advance capture progress for can_capture units at turn start."""

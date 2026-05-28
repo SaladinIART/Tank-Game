@@ -20,6 +20,18 @@
 - Enemy units block; friendly units block stopping but allow pass-through.
 - The destination must be empty.
 
+### Zone of Control (engagement)
+
+If a unit starts its turn **adjacent to any enemy**, its movement is
+capped at **1 hex** for that turn. You cannot just walk away from a fight.
+The HUD shows `ENGAGED -- movement limited to 1 hex` on the selected
+unit's panel.
+
+Flying units are exempt — they always move at full speed.
+
+This rewards careful positioning and makes screening units genuinely
+useful: pin an enemy with a cheap infantry, then bring up artillery.
+
 ## Combat
 
 - Damage: `round(base × atk_hp/10 × (1 − total_def/10))`
@@ -40,6 +52,49 @@
   attacks this turn; it **still counter-attacks** if engaged. Action ends
   immediately. Persists through the enemy turn so the bonus actually
   matters. Auto-clears next time the unit's faction starts its turn.
+
+## Veterancy (XP -> level -> rank)
+
+Inspired by Warhammer 40k Gladius. Every unit tracks `xp` and `level`
+(capped at **25**).
+
+**Earning XP:**
+- +1 XP per HP of damage dealt
+- +10 XP on a killing blow
+- +2 XP for surviving a counter-attack
+- +8 XP when an engineer flips a capture target
+
+**Ranks** (every 5 levels):
+
+| Level | Rank | Bonuses |
+|---|---|---|
+| 1–4 | Rookie | none |
+| 5–9 | Veteran | +1 atk |
+| 10–14 | Elite | +1 atk / +1 def |
+| 15–19 | Heroic | +2 atk / +1 def / +2 hp |
+| 20–24 | Legendary | +2 atk / +2 def / +3 hp / +1 vis |
+| 25 | Mythic | +3 atk / +2 def / +5 hp / +1 vis |
+
+Tooltip shows `Lv N (RankName) XP a/b` plus pips (`*`) for current rank.
+Selected-unit panel shows the same.
+
+On rank-up, max HP gains are immediate (the unit heals by the delta), so
+a Heroic-rank unit immediately benefits from its +2 HP cap.
+
+## Healing
+
+Two ways to recover HP:
+
+1. **Passive — owned capturable tiles**: standing on a city, oil well,
+   airfield or HQ that **your faction owns** heals +2 HP per turn at
+   turn start. This is why capturing matters beyond just income.
+2. **Active — engineer medic (`J`)**: select an engineer adjacent to a
+   wounded friendly and press `J`. Heals +3 HP. Consumes the engineer's
+   attack slot (move is preserved). The HUD hint `J heal` shows up
+   automatically when valid targets are in range.
+
+Heals respect veterancy-adjusted max HP (so a Heroic-rank Mythic unit can
+top off above the base 10 HP).
 
 ## Retreat (`R`)
 

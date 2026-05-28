@@ -29,6 +29,7 @@ On Windows you can also just double-click **`Saladin's Playground.bat`**.
 | **Tab** | Cycle to next unit that can still act |
 | **H** | Hunker down: +2 DEF, no attack this turn (XCOM-style) |
 | **R** | Retreat: move selected unit toward your own HQ |
+| **J** | Engineer medic: heal +3 HP to an adjacent friendly |
 | **F5** | Save (cycles 3 slots) |
 | **F** | Toggle fog of war (debug) |
 | **F11** | Toggle fullscreen |

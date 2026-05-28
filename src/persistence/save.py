@@ -118,6 +118,8 @@ def _unit_to_dict(u: Unit) -> dict[str, Any]:
         "has_moved":   u.has_moved,
         "has_attacked": u.has_attacked,
         "stance":      u.stance,
+        "level":       u.level,
+        "xp":          u.xp,
     }
 
 
@@ -218,6 +220,8 @@ def dict_to_state(data: dict[str, Any]) -> GameState:
             has_attacked=bool(ud["has_attacked"]),
             uid=int(ud["uid"]),   # explicit uid — bypasses auto-counter
             stance=str(ud.get("stance", "attack")),    # back-compat default
+            level=int(ud.get("level", 1)),             # back-compat: rookie
+            xp=int(ud.get("xp", 0)),
         )
         state.units[unit.uid] = unit   # bypass add_unit to avoid fog invalidation
         max_uid = max(max_uid, unit.uid)

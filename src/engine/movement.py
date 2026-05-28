@@ -7,6 +7,9 @@ Rules:
   - Cannot pass through or stop on enemy-occupied hexes.
   - Can pass through friendly hexes but cannot stop on them.
   - Result excludes the unit's own hex (already there).
+  - **Zone of Control (engagement)**: if the unit starts adjacent to any
+    enemy, its movement budget is capped at ``ENGAGED_MOVE_LIMIT`` (1 hex).
+    Flying units are exempt -- they always have full movement.
 """
 from __future__ import annotations
 
@@ -19,11 +22,16 @@ from src.engine.state import GameState
 from src.engine.unit import Unit
 
 
+# When adjacent to any enemy, movement is restricted to this many hexes.
+ENGAGED_MOVE_LIMIT = 1
+
+
 @dataclass
 class Movement:
     """Cached result of compute_movement() for one unit."""
     reachable: dict[Hex, int]                          # dest → MP cost; stoppable only
     prev: dict[Hex, Optional[Hex]] = field(repr=False) # predecessor map for path reconstruction
+    engaged: bool = False                              # True if movement was ZoC-capped
 
     def path_to(self, destination: Hex) -> list[Hex]:
         """
@@ -41,6 +49,20 @@ class Movement:
         return path
 
 
+def is_engaged(state: GameState, unit: Unit) -> bool:
+    """True if any enemy unit sits on a hex adjacent to *unit*.
+
+    Flying units don't count as engaged (they can disengage in three dimensions
+    -- justifies their faster manoeuvre)."""
+    if unit.unit_type.flying:
+        return False
+    for nb in neighbours(unit.hex):
+        other = state.unit_at(nb)
+        if other is not None and other.faction != unit.faction:
+            return True
+    return False
+
+
 def compute_movement(state: GameState, unit: Unit) -> Movement:
     """
     Compute all stoppable destinations and the predecessor map for *unit*.
@@ -51,6 +73,11 @@ def compute_movement(state: GameState, unit: Unit) -> Movement:
     cat = unit.unit_type.move_category
     mp = unit.unit_type.move
     flying = unit.unit_type.flying
+
+    # Zone of Control: engaged units can only step 1 hex this turn.
+    engaged = is_engaged(state, unit)
+    if engaged:
+        mp = min(mp, ENGAGED_MOVE_LIMIT)
 
     INF = 10 ** 9
     dist: dict[Hex, int] = {unit.hex: 0}
@@ -94,4 +121,4 @@ def compute_movement(state: GameState, unit: Unit) -> Movement:
         if h != unit.hex and state.unit_at(h) is None
     }
 
-    return Movement(reachable=reachable, prev=prev)
+    return Movement(reachable=reachable, prev=prev, engaged=engaged)

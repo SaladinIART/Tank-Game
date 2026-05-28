@@ -2,7 +2,18 @@
 
 ## General
 
-1. **Engineers win games**, not tanks. Every mission ends because someone
+1. **Veteran units are gold.** A Heroic-rank infantry (+2 atk / +1 def /
+   +2 hp) is worth two rookies. Pull wounded veterans back to a city to
+   heal — don't suicide them. Tooltip shows level + XP-to-next.
+2. **Watch for engagement (ZoC)**. The instant a unit is adjacent to an
+   enemy, it can only move 1 hex next turn. Don't walk into reach unless
+   you're ready to fight; if you have to disengage, plan a 2-turn break.
+3. **Use cities as field hospitals.** Owned capturable tiles heal +2 HP
+   per turn — rotate wounded units back to your HQ neighbourhood.
+4. **Engineers double as medics.** Press **J** with an engineer next to a
+   wounded ally to heal +3 HP. It consumes the engineer's attack, not its
+   move, so the engineer can still re-position.
+5. **Engineers win games**, not tanks. Every mission ends because someone
    captured something. Build at least 2 engineers turn 1–2 and push them
    toward enemy HQ / objective tiles immediately.
 2. **The 3-turn capture rule** means a single engineer left undefended will

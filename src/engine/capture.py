@@ -84,5 +84,10 @@ def process_captures(state: "GameState", faction: "Faction") -> list["Hex"]:
             # Ownership flip — set_tile_owner also calls reset_capture().
             state.set_tile_owner(h, faction.id)
             flipped.append(h)
+            # XP reward for the engineer(s) sitting on the flipped tile.
+            from src.engine.veterancy import XP_FOR_CAPTURE, award_xp
+            for u in state.units_of(faction.id):
+                if u.unit_type.can_capture and u.hex == h:
+                    award_xp(u, XP_FOR_CAPTURE)
 
     return flipped

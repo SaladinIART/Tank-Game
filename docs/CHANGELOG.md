@@ -5,6 +5,21 @@ the short version.
 
 ## Post-launch additions
 
+### Veterancy + Healing + Zone-of-Control
+- **Veterancy**: each unit tracks `xp` and `level` (cap 25). XP from
+  damage / kills / surviving counters / captures. 6 ranks (Rookie ->
+  Mythic) granting flat +atk / +def / +hp / +vision bonuses. Combat
+  formula applies attacker rank to base damage and defender rank to
+  defence. Save/load round-trips both fields.
+- **Healing**: (a) units standing on **owned capturable tiles**
+  (city / oil / airfield / HQ) heal +2 HP at turn start; (b) engineers
+  get an active **medic ability (`J`)** -- heal adjacent friendly +3 HP
+  for the attack slot (move preserved).
+- **Zone of Control**: units adjacent to enemies have movement capped at
+  1 hex per turn. Flying units exempt. Selected-unit panel shows the
+  `ENGAGED` warning. Makes screening and disengagement genuinely tactical.
+- 33 new tests; 702 total green.
+
 ### Hunker Down + Retreat + End-turn confirm + HQ clearance
 - **Hunker (`H`)**: XCOM-style stance. +2 DEF for incoming, can't attack,
   still counter-attacks. Persists through enemy turn; auto-clears at own

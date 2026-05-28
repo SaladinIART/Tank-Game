@@ -95,14 +95,18 @@ def _damage_with_hp(
     atk_hp_override: Optional[int] = None,
 ) -> int:
     """Internal: damage calc that lets us override the attacker's HP scaling."""
+    from src.engine.veterancy import bonuses as rank_bonuses
     base = base_damage(attacker.unit_type.unit_class, defender.unit_type.unit_class)
     if base <= 0:
         return 0
     atk_hp = attacker.hp if atk_hp_override is None else atk_hp_override
     if atk_hp <= 0:
         return 0
-    terrain_def = _total_defense(state, defender)
-    raw = base * (atk_hp / 10.0) * (1.0 - terrain_def / 10.0)
+    # Veterancy: attacker's rank adds flat damage; defender's rank adds flat def.
+    eff_base   = min(10, base + rank_bonuses(attacker.level).atk)
+    extra_def  = rank_bonuses(defender.level).def_
+    terrain_def = min(9, _total_defense(state, defender) + extra_def)
+    raw = eff_base * (atk_hp / 10.0) * (1.0 - terrain_def / 10.0)
     return max(0, round(raw))
 
 
@@ -200,6 +204,13 @@ def resolve_attack(
             f"-> {defender.unit_type.id} ({defender.faction})"
         )
 
+    from src.engine.veterancy import (
+        XP_FOR_DAMAGE,
+        XP_FOR_KILL,
+        XP_FOR_SURVIVING_COUNTER,
+        award_xp,
+    )
+
     dist = distance(attacker.hex, defender.hex)
     dmg = predict_damage(state, attacker, defender)
     defender.apply_damage(dmg)
@@ -215,6 +226,18 @@ def resolve_attack(
         ) > 0:
             counter = _damage_with_hp(state, defender, attacker)
             attacker.apply_damage(counter)
+
+    # Veterancy XP gains
+    if dmg > 0:
+        award_xp(attacker, dmg * XP_FOR_DAMAGE)
+        if not defender.is_alive():
+            award_xp(attacker, XP_FOR_KILL)
+    if counter > 0:
+        award_xp(defender, counter * XP_FOR_DAMAGE)
+        if not attacker.is_alive():
+            award_xp(defender, XP_FOR_KILL)
+        elif attacker.is_alive():
+            award_xp(attacker, XP_FOR_SURVIVING_COUNTER)
 
     # Batch-remove the dead. Direct dict-pop avoids double fog invalidation.
     dead_uids: list[int] = []

@@ -114,3 +114,50 @@ def retreat(state: GameState, unit: Unit) -> Optional[Hex]:
 def actionable_units(state: GameState, faction_id: str) -> list[Unit]:
     """Own units that still have an action this turn."""
     return [u for u in state.units_of(faction_id) if u.can_act()]
+
+
+# ---------------------------------------------------------------------------
+# Active heal -- engineer "medic" ability
+# ---------------------------------------------------------------------------
+
+MEDIC_HEAL_AMOUNT = 3
+
+
+def can_medic(state: GameState, healer: Unit, patient: Unit) -> bool:
+    """True iff *healer* (an engineer-class unit) can heal *patient* this turn."""
+    if not healer.is_alive() or not patient.is_alive():
+        return False
+    if healer is patient:
+        return False
+    if not healer.unit_type.can_capture:   # only engineer-class can medic
+        return False
+    if healer.has_attacked:                # healing uses the attack slot
+        return False
+    if patient.faction != healer.faction:
+        return False
+    if distance(healer.hex, patient.hex) != 1:
+        return False
+    from src.engine.veterancy import max_hp_for
+    return patient.hp < max_hp_for(patient)
+
+
+def medic_heal(state: GameState, healer: Unit, patient: Unit) -> int:
+    """Heal *patient* by ``MEDIC_HEAL_AMOUNT`` (capped); consume healer action.
+
+    Returns the actual amount healed (could be < MEDIC_HEAL_AMOUNT if near
+    cap, or 0 if the heal would have been a no-op).  Raises ``ValueError``
+    if ``can_medic`` rejects the pairing.
+    """
+    if not can_medic(state, healer, patient):
+        raise ValueError("Illegal medic action.")
+    from src.engine.veterancy import max_hp_for
+    cap = max_hp_for(patient)
+    before = patient.hp
+    patient.hp = min(cap, patient.hp + MEDIC_HEAL_AMOUNT)
+    healer.has_attacked = True              # uses the attack slot, not the move
+    return patient.hp - before
+
+
+def adjacent_friendly_patients(state: GameState, healer: Unit) -> list[Unit]:
+    """Adjacent allies that would benefit from a medic action right now."""
+    return [u for u in state.units.values() if can_medic(state, healer, u)]

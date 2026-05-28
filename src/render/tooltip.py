@@ -21,6 +21,14 @@ import pygame
 from src.engine.combat import base_damage, load_damage_matrix
 from src.engine.tile import MOVE_CATEGORIES, Tile, all_terrain
 from src.engine.unit import Unit, VALID_UNIT_CLASSES
+from src.engine.veterancy import (
+    MAX_LEVEL,
+    bonuses as rank_bonuses,
+    max_hp_for,
+    rank_name,
+    rank_of,
+    xp_for_level,
+)
 
 # ---------------------------------------------------------------------------
 # Colors
@@ -104,23 +112,51 @@ def unit_tooltip_lines(unit: Unit) -> list[tuple[str, tuple[int, int, int]]]:
     ut = unit.unit_type
     lines: list[tuple[str, tuple[int, int, int]]] = []
 
-    # Title + faction
+    # Title + faction + veterancy stars
     fac_col = C_FACTION.get(ut.faction, C_VALUE)
     tier_lbl = f"T{ut.tier}"
-    lines.append((f"{ut.name}  [{tier_lbl}]", C_TITLE))
+    stars = "*" * rank_of(unit.level)         # 0..5 pips
+    title = f"{ut.name}  [{tier_lbl}]"
+    if stars:
+        title += f"  {stars}"
+    lines.append((title, C_TITLE))
     lines.append((f"{ut.faction} {ut.unit_class}", fac_col))
 
-    # HP
-    hp_color = C_GOOD if unit.hp >= ut.hp * 0.75 else (
-        C_WARN if unit.hp >= ut.hp * 0.4 else C_BAD
+    # Veterancy
+    rb = rank_bonuses(unit.level)
+    if unit.level < MAX_LEVEL:
+        next_xp = xp_for_level(unit.level + 1)
+        vet_text = f"Lv {unit.level} ({rank_name(unit.level)})  XP {unit.xp}/{next_xp}"
+    else:
+        vet_text = f"Lv {MAX_LEVEL} ({rank_name(unit.level)})  XP MAX"
+    bonus_bits = []
+    if rb.atk:    bonus_bits.append(f"+{rb.atk}atk")
+    if rb.def_:   bonus_bits.append(f"+{rb.def_}def")
+    if rb.hp:     bonus_bits.append(f"+{rb.hp}hp")
+    if rb.vision: bonus_bits.append(f"+{rb.vision}vis")
+    if bonus_bits:
+        vet_text += "  (" + " ".join(bonus_bits) + ")"
+    vet_col = C_GOOD if rank_of(unit.level) >= 3 else (
+        C_WARN if rank_of(unit.level) >= 1 else C_LABEL
     )
-    lines.append((f"HP: {unit.hp}/{ut.hp}", hp_color))
+    lines.append((vet_text, vet_col))
 
-    # Combat stats
+    # HP (use veterancy-adjusted max)
+    cap_hp = max_hp_for(unit)
+    hp_color = C_GOOD if unit.hp >= cap_hp * 0.75 else (
+        C_WARN if unit.hp >= cap_hp * 0.4 else C_BAD
+    )
+    lines.append((f"HP: {unit.hp}/{cap_hp}", hp_color))
+
+    # Combat stats (show base + rank bonus inline if any)
     rng = (f"{ut.range_min}-{ut.range_max}"
            if ut.range_max != ut.range_min else str(ut.range_max))
     indirect = "  (indirect)" if ut.is_indirect() else ""
-    lines.append((f"ATK {ut.atk}  DEF {ut.def_}  RNG {rng}{indirect}", C_VALUE))
+    atk_eff = ut.atk + rb.atk
+    def_eff = ut.def_ + rb.def_
+    atk_str = f"{atk_eff}" + (f" ({ut.atk}+{rb.atk})" if rb.atk else "")
+    def_str = f"{def_eff}" + (f" ({ut.def_}+{rb.def_})" if rb.def_ else "")
+    lines.append((f"ATK {atk_str}  DEF {def_str}  RNG {rng}{indirect}", C_VALUE))
 
     # Movement
     flying = "  flying" if ut.flying else ""

@@ -91,11 +91,13 @@ class TestUnitTooltipLines:
 
     def test_low_hp_shows_warning_color(self):
         u = Unit(type_id="nato_inf_l", faction="NATO", hex=Hex(0, 0), hp=2)
-        # HP line is index 2 (after title + faction)
         lines = unit_tooltip_lines(u)
-        hp_color = lines[2][1]
-        # Red-ish: more red than green
-        assert hp_color[0] > hp_color[1]
+        # HP line starts with "HP:"; colour should be reddish (more R than G).
+        hp_line = next(t for t in lines if t[0].startswith("HP:"))
+        hp_color = hp_line[1]
+        assert hp_color[0] > hp_color[1], (
+            f"Low HP should render warning red, got {hp_color}"
+        )
 
 
 # ---------------------------------------------------------------------------

@@ -12,6 +12,7 @@ Controls (in-game)
   Tab            -- cycle to next unit that can act
   H              -- hunker down: +2 DEF, no attack (defend stance)
   R              -- retreat: move selected unit toward own HQ
+  J              -- engineer heal +3 HP for adjacent friendly
   F5             -- manual save (cycles slots 1-3)
   F              -- toggle fog of war
   F11            -- toggle fullscreen
@@ -52,6 +53,8 @@ from src.engine.scenario import load_scenario
 from src.engine.skirmish import build_skirmish_state, load_skirmish_map
 from src.engine.stance_actions import (
     actionable_units,
+    adjacent_friendly_patients,
+    medic_heal,
     retreat as do_retreat,
     set_defend,
 )
@@ -1308,6 +1311,26 @@ async def main() -> None:  # noqa: C901  (complexity expected in a game loop)
         movement = None; path_preview = []; attack_target_uids = set()
         print(f"[order] {selected_unit.unit_type.name} hunkering down (+2 DEF)")
 
+    def _order_medic() -> None:
+        """Engineer-class active heal: heal the most wounded adjacent friendly."""
+        nonlocal selected_unit, movement, path_preview, attack_target_uids
+        assert state is not None
+        if selected_unit is None or selected_unit.faction != state.active_faction.id:
+            return
+        if state.active_faction.is_ai:
+            return
+        patients = adjacent_friendly_patients(state, selected_unit)
+        if not patients:
+            print(f"[medic] {selected_unit.unit_type.name}: no adjacent wounded ally")
+            return
+        # Heal the one with lowest HP first.
+        patient = min(patients, key=lambda u: u.hp)
+        healed = medic_heal(state, selected_unit, patient)
+        audio.play_sfx("capture")  # cheerful sfx; lacks a dedicated heal sound
+        print(f"[medic] {selected_unit.unit_type.name} healed "
+              f"{patient.unit_type.name} for +{healed} HP")
+        movement = None; path_preview = []; attack_target_uids = set()
+
     def _order_retreat() -> None:
         nonlocal selected_unit, movement, path_preview, attack_target_uids
         assert state is not None
@@ -1550,6 +1573,9 @@ async def main() -> None:  # noqa: C901  (complexity expected in a game loop)
 
                     elif event.key == pygame.K_r:
                         _order_retreat()      # R = retreat toward HQ
+
+                    elif event.key == pygame.K_j:
+                        _order_medic()        # J = engineer heal adjacent friendly
 
                     elif event.key == pygame.K_TAB:
                         # Cycle to next unit that can act; pan camera to it.
@@ -1898,8 +1924,20 @@ async def main() -> None:  # noqa: C901  (complexity expected in a game loop)
                             f"-> {atk_dmg} dmg  *  <- {counter_dmg} counter",
                             (255, 180, 180),
                         ))
+                # Engagement / ZoC indicator
+                if movement is not None and movement.engaged:
+                    sel_lines.append(
+                        ("ENGAGED -- movement limited to 1 hex", (240, 180, 110))
+                    )
+                medic_avail = (
+                    selected_unit.unit_type.can_capture
+                    and selected_unit.faction == state.active_faction.id
+                    and not selected_unit.has_attacked
+                    and adjacent_friendly_patients(state, selected_unit)
+                )
+                medic_hint = "  *  J heal" if medic_avail else ""
                 sel_lines.append(
-                    ("H hunker  *  R retreat  *  Tab next  *  ESC cancel",
+                    (f"H hunker  *  R retreat{medic_hint}  *  Tab next  *  ESC cancel",
                      (140, 140, 110))
                 )
                 for txt, col in sel_lines:

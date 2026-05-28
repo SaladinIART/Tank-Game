@@ -81,6 +81,8 @@ class Unit:
     has_attacked: bool = field(default=False)
     uid: int = field(default_factory=lambda: next(_id_counter))
     stance: str = field(default=STANCE_ATTACK)
+    level: int = field(default=1)        # 1..MAX_LEVEL veterancy (see veterancy.py)
+    xp: int = field(default=0)           # cumulative XP; level recomputed on award
 
     @property
     def unit_type(self) -> UnitType:
